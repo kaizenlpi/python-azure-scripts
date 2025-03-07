@@ -1,0 +1,22 @@
+from  azure.identity  import  AzureCliCredential
+from  azure.mgmt.resource  import  ResourceManagementClient
+  
+
+# Initialize the Azure credentials
+
+credential = AzureCliCredential()
+subscription_id = "Your-Subscription-ID-#" 
+resource_client = ResourceManagementClient(credential, subscription_id)
+
+provider_namespace = 'Microsoft.Network'  # replace with your desired provider namespace
+provider = resource_client.providers.get(provider_namespace)
+
+  
+
+for  resource_type  in  provider.resource_types:
+
+        print(f"Resource Type: {resource_type.resource_type}")
+
+        print(f"Latest API Version: {resource_type.api_versions[0]}")
+
+        print('\n')
