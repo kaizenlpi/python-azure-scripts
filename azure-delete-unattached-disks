@@ -1,0 +1,59 @@
+#Author: Matt Brady
+# Goal: Re-write into azure commands
+# azure commercial subscription id: YOUR SUBSCRIPTION ID # HERE 
+
+from azure.identity import DefaultAzureCredential
+from azure.mgmt.compute import ComputeManagementClient
+from azure.mgmt.compute.models import Disk
+from openpyxl import load_workbook
+import requests
+
+subscription_id = "YOUR SUBSCRIPTION ID # HERE " 
+resource_group = "YOUR-RESOURCE-GROUP-NAME-HERE" 
+resource_id = "/subscriptions/YOUR SUBSCRIPTION ID # HERE /resourceGroups/RESOURCE-GROUP-NAME (CUSTOMER ACCOUNT)"
+
+# Azure Authentication and client setup
+credential = DefaultAzureCredential()
+api_version = "2024-07-01"
+api_version = "DELETE https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/apiVersionSets/{versionSetId}?api-version=api_version"
+
+
+# Initialize the Azure Compute Management client 2 Params Required
+compute_client = ComputeManagementClient(credential, subscription_id)
+
+# Load the Excel file containing the volume IDs (disk IDs in this case)
+wb = load_workbook("azure_cre_pce_unattached_volumes_2025_02_28.xlsx")
+ws = wb['azure_cre_pce_unattached_volume']
+column = ws['E']
+
+# Extract the column values (assuming column 'E' contains resource IDs)
+column_list = [cell.value for cell in column if cell.value]  # Skip empty cells
+
+resource_id = resource_id.split('/disks/', 1)[-1]
+
+# Extract disk names by stripping the prefix
+disk_name = [resource_id.split('/disks/', 1)[-1] for resource_id in column_list]
+
+url = f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/Microsoft.Compute/disks/{disk_name}?api-version={api_version}"
+
+# Print the cleaned disk names
+print(disk_name)
+
+for volume_id in disk_name:
+    print(f"Checking and deleting disk: {volume_id}")
+    
+    try:
+        # Retrieve the disk details
+        disk = compute_client.disks.get(resource_group_name=resource_id, disk_name=volume_id)
+
+        # Check if the disk is unattached
+        if disk and disk.managed_by is None:
+            print(f"Disk {volume_id} is unattached. Deleting...")
+            compute_client.disks.begin_delete(resource_group_name="cre-s4-pce-canadacentral-management", disk_name=volume_id)
+            print(f"Disk {volume_id} has been deleted.")
+        else:
+            print(f"Disk {volume_id} is attached or in use. Skipping...")
+    
+    except Exception as e:
+        print(f"Failed to delete disk {volume_id}: {e}")
+        continue
