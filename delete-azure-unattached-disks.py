@@ -1,38 +1,48 @@
-# Author Matt Brady
-# 3-14-25 
-# This worked today. Success. 
+Author: Matt Brady
 
 import subprocess
-import pandas as pd
-#from openpyxl import load_workbook
 
-# Load the Excel file (Modify this for your actual file and sheet)
-# file_path = "azure_disks.xlsx"
-# sheet_name = "Sheet1"  # Change if needed
-# column_name = "DiskName"  # The column containing disk names
+# List of Azure Resource Groups (If needed, match each disk to its group)
+resource_groups = [
+    "CRE-S4-PCE-CUSTOMER0039",
+    "CRE-S4-PCE-CANADAEAST-MANAGEMENT",
+    "CRE-S4-PCE-CUSTOMER0050",
+    "CRE-S4-PCE-SUPPORT0012",
+    "CRE-S4-PCE-CUSTOMER0020",
+    "CRE-S4-PCE-CUSTOMER0031",
+    "CRE-S4-PCE-CUSTOMER0526",
+    "CRE-S4-PCE-CUSTOMER0057",
+    "CRE-S4-PCE-CUSTOMER0039",
+    "CRE-S4-PCE-CUSTOMER0557"
+]
 
-#Azure Resource Group
-resource_group = "cre-s4-pce-canadacentral" 
+# File containing disk IDs (each disk ID should be on a new line)
+file_path = "disk-ids.azure.txt"
 
-# Load the Excel file containing the volume IDs (disk IDs in this case)
-file_path = "azure_cre_pce_unattached_volumes_2025_02_28.xlsx"
-sheet_name = "azure_cre_pce_unattached_volume"
-column_name = 'VOLUME_NAME'
+# Read disk IDs from the file and clean them
+with open(file_path, "r") as file:
+    disk_ids = [line.strip() for line in file if line.strip()]  # Remove spaces & empty lines
 
-# Read the disk names from the Excel file
-df = pd.read_excel(file_path, sheet_name)
+# Check if there are disks to delete
+if not disk_ids:
+    print("No disks found in the file.")
+    exit()
 
-# Convert column values to a list (Remove empty values)
-disk_names = df[column_name].dropna().tolist()
+# Convert disk IDs into a space-separated string for Azure CLI
+disk_ids_string = " ".join(disk_ids)
 
-# Loop through each disk name and delete it using Azure CLI
-for disk_name in disk_names:
-    print(f"Deleting disk: {disk_name}...")
-    
-    # Construct the Azure CLI delete command
-    command = f"az disk delete --resource-group {resource_group} --name {disk_name} --yes"
-    
-    # Execute the command
-    subprocess.run(command, shell=True, check=True)
+# Construct and run the Azure CLI delete command
+command = f"az disk delete --ids {disk_ids_string} --yes"
+print(f"Running command: {command}")  # Debugging output
 
-print("All disks processed.")
+result = subprocess.run(command, shell=True, capture_output=True, text=True)
+
+# Print the command output
+print("STDOUT:", result.stdout)
+print("STDERR:", result.stderr)
+
+# Check for errors
+if result.returncode != 0:
+    print(f"Error deleting disks: {result.stderr}")
+else:
+    print("All specified disks have been deleted successfully.")
