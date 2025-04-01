@@ -1,0 +1,24 @@
+'''Goal: Use script to parse endpoints.auto.tfvars to list out: customer cname record | On Prem IP Address | Open Ports for Outbound Connections. '''
+
+import re
+
+def parse_terraform_resources(file_path):
+    with open(file_path, 'r') as f:
+        content = f.read()
+
+    # Match each resource block
+    pattern = re.findall(
+        r'(\w+)\s*=\s*{[^}]*?ip_address\s*=\s*"([^"]+)"[^}]*?port_list\s*=\s*\[((?:.|\n)*?)\]',
+        content,
+        re.DOTALL
+    )
+
+    for resource, ip_address, ports_str in pattern:
+        ports = [port.strip().strip('"') for port in ports_str.split(',') if port.strip()]
+        ports_display = ', '.join(ports)
+        print(f"{resource} | IP: {ip_address} | Ports: {ports_display}")
+
+# Copy contents of customer0057-endpoints.auto.tfvars and customer0557-endpoints.auto.tfvars into local files where your script is to parse it quickly without using the absolute path 
+if __name__ == "__main__":
+    #parse_terraform_resources("customer0057-endpoints.auto.tfvars")
+    parse_terraform_resources("customer0557-endpoints.auto.tfvars")
